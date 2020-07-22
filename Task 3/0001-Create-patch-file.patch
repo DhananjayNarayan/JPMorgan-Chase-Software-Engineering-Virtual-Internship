@@ -1,0 +1,118 @@
+From 01590792824c1511ee643a0fe613af9345edfac5 Mon Sep 17 00:00:00 2001
+From: Dhananjay Narayan <dhananjayashwath@gmail.com>
+Date: Thu, 23 Jul 2020 02:28:15 +0530
+Subject: [PATCH] Create patch file
+
+---
+ src/DataManipulator.ts | 32 ++++++++++++++++++++++----------
+ src/Graph.tsx          | 30 ++++++++++++++++++------------
+ 2 files changed, 40 insertions(+), 22 deletions(-)
+
+diff --git a/src/DataManipulator.ts b/src/DataManipulator.ts
+index f6b15ff..35f282c 100644
+--- a/src/DataManipulator.ts
++++ b/src/DataManipulator.ts
+@@ -1,20 +1,32 @@
+ import { ServerRespond } from './DataStreamer';
+ 
+ export interface Row {
+-  stock: string,
+-  top_ask_price: number,
+-  timestamp: Date,
++  price_abc: number,
++  price_def: number,
++  ratio: number,
++  timestamp: date,
++  upper_bound: number,
++  lower_bound: number,
++  trigger_alert: number | undefined,
+ }
+ 
+ 
+ export class DataManipulator {
+   static generateRow(serverResponds: ServerRespond[]): Row[] {
+-    return serverResponds.map((el: any) => {
++    const priceABC = (serverResponds[0].top_ask.price + serverResponds[0].top_bid.price) / 2;
++    const priceDEF = (serverResponds[1].top_ask.price + serverResponds[1].top_bid.price) / 2;
++    const ratio = priceABC / priceDEF;
++    const upperBound = 1 + 0.05;
++    const lowerBound = 1 - 0.05;
+       return {
+-        stock: el.stock,
+-        top_ask_price: el.top_ask && el.top_ask.price || 0,
+-        timestamp: el.timestamp,
++        price_abc: priceABC,
++        price_def: priceDEF,
++        ratio,
++        timestamp: serverResponds[0].timestamp > serverResponds[1].timestamp ?
++          serverResponds[0].timestamp : serverResponds[1].timestamp,
++        upper_bound: upperBound, // this is dynamic
++        lower_bound: lowerBound, // this is dynamic
++        trigger_alert: (ratio > upperBound || ratio < lowerBound) ? ratio : undefined, // this is the alert raised 
+       };
+-    })
+-  }
+-}
++    }
++  }
+\ No newline at end of file
+diff --git a/src/Graph.tsx b/src/Graph.tsx
+index 58fb997..8c74ecb 100644
+--- a/src/Graph.tsx
++++ b/src/Graph.tsx
+@@ -23,10 +23,13 @@ class Graph extends Component<IProps, {}> {
+     const elem = document.getElementsByTagName('perspective-viewer')[0] as unknown as PerspectiveViewerElement;
+ 
+     const schema = {
+-      stock: 'string',
+-      top_ask_price: 'float',
+-      top_bid_price: 'float',
+-      timestamp: 'date',
++      price_abc: 'float', // needed for calcuting the ratios
++      price_def: 'float',  // needed for calculating the ratios
++      ratio: 'float',   // this will show the ratio between stocks
++      timestamp: 'date',  // calcuation is w.r.t time
++      upper_bound: 'float',  // the upper threshold
++      lower_bound: 'float',  // the lower threshold
++      trigger_alert: 'float',  // the alert when the correlations starts become weak
+     };
+ 
+     if (window.perspective && window.perspective.worker()) {
+@@ -36,23 +39,26 @@ class Graph extends Component<IProps, {}> {
+       // Load the `table` in the `<perspective-viewer>` DOM reference.
+       elem.load(this.table);
+       elem.setAttribute('view', 'y_line');
+-      elem.setAttribute('column-pivots', '["stock"]');
++      // elem.setAttribute('column-pivots', '["stock"]'); not needed now
+       elem.setAttribute('row-pivots', '["timestamp"]');
+-      elem.setAttribute('columns', '["top_ask_price"]');
++      elem.setAttribute('columns', '["ratio", "lower_bound","upper_bound","trigger_alert"]');
+       elem.setAttribute('aggregates', JSON.stringify({
+-        stock: 'distinctcount',
+-        top_ask_price: 'avg',
+-        top_bid_price: 'avg',
+-        timestamp: 'distinct count',
++        price_abc: 'float',
++        price_def: 'float',
++        ratio: 'float',
++        timestamp: 'date',
++        upper_bound: 'float',
++        lower_bound: 'float',
++        trigger_alert: 'float',
+       }));
+     }
+   }
+ 
+   componentDidUpdate() {
+     if (this.table) {
+-      this.table.update(
++      this.table.update([
+         DataManipulator.generateRow(this.props.data),
+-      );
++      ]);
+     }
+   }
+ }
+-- 
+2.27.0.windows.1
+
