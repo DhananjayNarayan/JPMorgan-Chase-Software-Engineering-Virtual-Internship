@@ -1,6 +1,6 @@
 # JPMorgan-Chase-Software-Engineering-Virtual-Internship
-This repository contains the submitted patch files of the various tasks assigned by JPMorgan Chase & Co. Software Engineering Virtual Internship
-
+This repository contains the submitted patch files of the various tasks assigned by JPMorgan Chase & Co. Software Engineering Virtual Internship.
+To know more about this virtual experience program, check out the below link.
 [JPMorgan Chase Software Engineering Virtual Experience](https://in.insidesherpa.com/virtual-internships/R5iK7HMxJGBgaSbvk)
 
 ## Certificate of Completion
